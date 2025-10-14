@@ -1,0 +1,539 @@
+package org.example;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+
+//  ************************************  VEHICLE  ********************
+ abstract class Vehicle {
+    private String licensePlate;
+    private String vehicleType;
+
+    // Constructor to initialize vehicle
+    public Vehicle(String licensePlate, String vehicleType) {
+        this.licensePlate = licensePlate;
+        this.vehicleType = vehicleType;
+    }
+
+    // Getter for vehicle type
+    public String getVehicleType() {
+        return vehicleType;
+    }
+
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    // Abstract method for calculating parking fee
+    public abstract double calculateFee(int hoursStayed);
+}
+
+class BikeVehicle extends Vehicle {
+    private static final double RATE = 5.0; // $5 per hour for bikes
+
+    public BikeVehicle(String licensePlate) {
+        super(licensePlate, "Bike");
+    }
+
+    // Implement calculateFee for Bike
+    @Override
+    public double calculateFee(int hoursStayed) {
+        return hoursStayed * RATE;
+    }
+}
+class CarVehicle extends Vehicle {
+    private static final double RATE = 10.0; // $10 per hour for cars
+
+    public CarVehicle(String licensePlate) {
+        super(licensePlate, "Car");
+    }
+
+    // Implement calculateFee for Car
+    @Override
+    public double calculateFee(int hoursStayed) {
+        return hoursStayed * RATE;
+    }
+}
+
+// OtherVehicle class for any other vehicle type
+class OtherVehicle extends Vehicle {
+    private static final double RATE = 15.0; // $15 per hour for other vehicles
+
+    // Constructor to initialize OtherVehicle
+    public OtherVehicle(String licensePlate, int hoursStayed) {
+        super(licensePlate, "Other");
+
+    }
+
+    // Implement calculateFee for Car
+    @Override
+    public double calculateFee(int hoursStayed) {
+        return hoursStayed * RATE;
+    }
+}
+class VehicleFactory {
+    public static Vehicle createVehicle(String vehicleType, String licensePlate) {
+        if (vehicleType.equalsIgnoreCase("Car")) {
+            return new CarVehicle(licensePlate);
+        } else if (vehicleType.equalsIgnoreCase("Bike")) {
+            return new BikeVehicle(licensePlate);
+        }
+        return null; // For unsupported vehicle types
+    }
+}
+
+class FeeCalculator {
+
+    // Calculate fee by delegating to the vehicle's calculateFee method
+    public static double calculateFee(int hoursStayed, Vehicle vehicle) {
+        return vehicle.calculateFee(hoursStayed); // Use vehicle-specific fee calculation
+    }
+}
+
+// ****************  PAYMENT  ********
+
+interface PaymentStrategy {
+    void processPayment(double amount);
+}
+
+class Payment {
+    private double amount;
+    private PaymentStrategy paymentStrategy; // Payment strategy interface
+
+    // Constructor to initialize the payment amount and payment strategy
+    public Payment(double amount, PaymentStrategy paymentStrategy) {
+        this.amount = amount;
+        this.paymentStrategy = paymentStrategy;
+    }
+
+
+
+    // Process the payment using the assigned strategy
+    public void processPayment() {
+        if (amount > 0) {
+            paymentStrategy.processPayment(amount);  // Delegating to strategy
+        } else {
+            System.out.println("Invalid payment amount.");
+        }
+    }
+}
+
+class PaymentService {
+    private Scanner scanner;
+
+    // Constructor to initialize with a Scanner
+    public PaymentService(Scanner scanner) {
+        this.scanner = scanner;
+    }
+
+    public void processPayment(double fee) {
+        // Choose payment method and process payment
+        choosePaymentMethod(fee);
+    }
+
+    public void choosePaymentMethod(double fee) {
+        System.out.println("Total fee: " + fee);
+        System.out.println("Choose payment method:");
+        System.out.println("1. Credit Card");
+        System.out.println("2. Cash");
+        System.out.println("3. UPI");
+
+        int choice = scanner.nextInt();  // Use the passed scanner
+
+        Payment payment;
+        switch (choice) {
+            case 1:
+                payment = new Payment(fee, new CreditCardPayment());
+                break;
+            case 2:
+                payment = new Payment(fee, new CashPayment());
+                break;
+            case 3:
+                payment = new Payment(fee, new UPIPayment());
+                break;
+            default:
+                System.out.println("Invalid choice! Defaulting to Cash payment.");
+                payment = new Payment(fee, new CashPayment());
+                break;
+        }
+        payment.processPayment();
+    }
+}
+class CashPayment implements PaymentStrategy {
+    @Override
+    public void processPayment(double amount) {
+        System.out.println("Processing cash payment of $" + amount);
+        // Logic for cash payment processing
+    }
+}
+class CreditCardPayment implements PaymentStrategy {
+    @Override
+    public void processPayment(double amount) {
+        System.out.println("Processing credit card payment of $" + amount);
+        // Logic for credit card payment processing
+    }
+}
+
+class UPIPayment implements PaymentStrategy {
+    @Override
+    public void processPayment(double amount) {
+        System.out.println("Processing UPI payment of $" + amount);
+        // Logic for UPI payment processing
+    }
+}
+
+// ************ PARKING SPOT  *******************
+
+abstract class ParkingSpot {
+    private int spotNumber;
+    private boolean isOccupied;
+    private Vehicle vehicle;
+    private String spotType;
+
+    public ParkingSpot(int spotNumber, String spotType) {
+        this.spotNumber = spotNumber;
+        this.isOccupied = false;
+        this.spotType = spotType;
+    }
+
+    public boolean isOccupied() {
+        return isOccupied;
+    }
+
+    public abstract boolean canParkVehicle(Vehicle vehicle);
+
+    public void parkVehicle(Vehicle vehicle) {
+        if (isOccupied) {
+            throw new IllegalStateException("Spot is already occupied.");
+        }
+        if (!canParkVehicle(vehicle)) {
+            throw new IllegalArgumentException("This spot is not suitable for a " + vehicle.getVehicleType());
+        }
+        this.vehicle = vehicle;
+        this.isOccupied = true;
+    }
+
+    public void vacate() {
+        if (!isOccupied) {
+            throw new IllegalStateException("Spot is already vacant.");
+        }
+        this.vehicle = null;
+        this.isOccupied = false;
+    }
+
+    public int getSpotNumber() {
+        return spotNumber;
+    }
+
+    public Vehicle getVehicle() {
+        return vehicle;
+    }
+
+    @Override
+    public String toString() {
+        return "ParkingSpot{" +
+                "spotNumber=" + spotNumber +
+                ", isOccupied=" + isOccupied +
+                ", vehicle=" + (vehicle != null ? vehicle.getLicensePlate() : "None") +
+                '}';
+    }
+
+    public String getSpotType() {
+        return spotType;
+    }
+}
+
+class BikeParkingSpot extends ParkingSpot {
+
+    public BikeParkingSpot(int spotNumber) {
+        super(spotNumber, "Bike");
+    }
+
+    @Override
+    public boolean canParkVehicle(Vehicle vehicle) {
+        return "Bike".equalsIgnoreCase(vehicle.getVehicleType());
+    }
+}
+
+class CarParkingSpot extends ParkingSpot {
+
+    public CarParkingSpot(int spotNumber) {
+        super(spotNumber, "Car");
+    }
+
+    @Override
+    public boolean canParkVehicle(Vehicle vehicle) {
+        return "Car".equalsIgnoreCase(vehicle.getVehicleType());
+    }
+}
+
+class ParkingFloor {
+    private List<ParkingSpot> spots;  // List of parking spots on this floor
+    private int floorNumber;  // To track which floor this is
+
+    // Constructor to initialize the parking floor with a specific number of spots for cars and bikes
+    public ParkingFloor(int floorNumber, int numOfCarSpots, int numOfBikeSpots) {
+        this.floorNumber = floorNumber;
+        this.spots = new ArrayList<>();  // Initialize the list of spots
+
+        // Add spots for cars
+        for (int i = 0; i < numOfCarSpots; i++) {
+            this.spots.add(new CarParkingSpot(i + 1));  // Add car spots (using CarParkingSpot)
+        }
+
+        // Add spots for bikes
+        for (int i = numOfCarSpots; i < numOfCarSpots + numOfBikeSpots; i++) {
+            this.spots.add(new BikeParkingSpot(i + 1));  // Add bike spots (using BikeParkingSpot)
+        }
+    }
+
+
+
+    // Method to find an available spot based on the vehicle type
+    public ParkingSpot findAvailableSpot(String vehicleType) {
+        for (ParkingSpot spot : spots) {
+            if (!spot.isOccupied() && spot.getSpotType().equalsIgnoreCase(vehicleType)) {
+                return spot;  // Return the first available spot for the vehicle type
+            }
+        }
+        return null;  // No available spot found for the given vehicle type
+    }
+
+
+
+    // Method to return all parking spots on this floor
+    public List<ParkingSpot> getParkingSpots() {
+        return spots;
+    }
+}
+
+class ParkingLot {
+    private List<ParkingFloor> floors;
+
+    // Constructor to initialize the parking lot with multiple floors
+    public ParkingLot(List<ParkingFloor> floors) {
+        this.floors = floors;
+    }
+
+    // Method to find an available spot across all floors based on vehicle type
+    public ParkingSpot findAvailableSpot(String vehicleType) {
+        for (ParkingFloor floor : floors) {
+            ParkingSpot spot = floor.findAvailableSpot(vehicleType);
+            if (spot != null) {
+                return spot; // Found an available spot for the vehicle type
+            }
+        }
+        return null; // No available spot found for the given vehicle type
+    }
+
+    // Method to park a vehicle
+    public ParkingSpot parkVehicle(Vehicle vehicle) {
+        ParkingSpot spot = findAvailableSpot(vehicle.getVehicleType());
+        if (spot != null) {
+            spot.parkVehicle(vehicle); // Mark the spot as occupied
+            System.out.println("Vehicle parked successfully in spot: " + spot.getSpotNumber());
+            return spot;
+        }
+        System.out.println("No parking spots available for " + vehicle.getVehicleType() + "!");
+        return null;
+    }
+
+    // Method to vacate a parking spot
+    public void vacateSpot(ParkingSpot spot, Vehicle vehicle) {
+        if (spot != null && spot.isOccupied() && spot.getVehicle().equals(vehicle)) {
+            spot.vacate(); // Free the spot
+            System.out.println(vehicle.getVehicleType() + " vacated the spot: " + spot.getSpotNumber());
+        } else {
+            System.out.println("Invalid operation! Either the spot is already vacant or the vehicle does not match.");
+        }
+    }
+
+    // Method to find a spot by its number
+    public ParkingSpot getSpotByNumber(int spotNumber) {
+        for (ParkingFloor floor : floors) {
+            for (ParkingSpot spot : floor.getParkingSpots()) {
+                if (spot.getSpotNumber() == spotNumber) {
+                    return spot;
+                }
+            }
+        }
+        return null; // Spot not found
+    }
+
+    // Getter for floors
+    public List<ParkingFloor> getFloors() {
+        return floors;
+    }
+}
+
+class Ticket {
+    private ParkingSpot parkingSpot;
+    private Vehicle vehicle;
+    private LocalDateTime startTime;
+
+
+    // Constructor to initialize ticket with parking spot and vehicle
+    public Ticket(ParkingSpot parkingSpot, Vehicle vehicle) {
+        this.parkingSpot = parkingSpot;
+        this.vehicle = vehicle;
+        this.startTime = LocalDateTime.now();  // Set current time as the start time
+    }
+
+}
+
+// ******************************  GATES ****************************
+class EntranceGate {
+    private ParkingLot parkingLot;
+
+    // Constructor to initialize EntranceGate with the parking lot
+    public EntranceGate(ParkingLot parkingLot) {
+        this.parkingLot = parkingLot;
+    }
+
+    // Method to process the vehicle entrance
+    public void processEntrance() {
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Enter the vehicle license plate: ");
+        String licensePlate = scanner.next();
+        System.out.println("Enter the vehicle type (Car or Bike): ");
+        String vehicleType = scanner.next();
+
+        Vehicle vehicle = VehicleFactory.createVehicle(vehicleType, licensePlate);
+        if (vehicle == null) {
+            System.out.println("Invalid vehicle type! Only Car and Bike are allowed.");
+            return;
+        }
+
+        // Try to park the vehicle
+        ParkingSpot spot = parkingLot.parkVehicle(vehicle);
+        if (spot != null) {
+            System.out.println("Vehicle parked successfully in spot: " + spot.getSpotNumber());
+        } else {
+            System.out.println("No available spots for the vehicle type.");
+        }
+    }
+}
+
+class ExitGate {
+    private ParkingLot parkingLot;
+    private PaymentService paymentService;
+
+    public ExitGate(ParkingLot parkingLot, PaymentService paymentService) {
+        this.parkingLot = parkingLot;
+        this.paymentService = paymentService;
+    }
+
+    public void processExit(int spotNumber, int hoursStayed) {
+        // Find the spot by number
+        ParkingSpot spot = parkingLot.getSpotByNumber(spotNumber);
+
+        if (spot == null || !spot.isOccupied()) {
+            System.out.println("Invalid or vacant spot!");
+            return;
+        }
+
+        // Get the vehicle in the spot
+        Vehicle vehicle = spot.getVehicle();
+        if (vehicle == null) {
+            System.out.println("No vehicle found in the spot!");
+            return;
+        }
+
+        // Calculate the parking fee
+        double fee = vehicle.calculateFee(hoursStayed);
+
+        // Delegate payment processing to PaymentService
+        paymentService.processPayment(fee);
+
+        // Vacate the spot after payment
+        parkingLot.vacateSpot(spot, vehicle);
+        System.out.println("Spot vacated successfully!");
+    }
+}
+
+
+public class App {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Initialize the parking lot with one floor and two spots for simplicity
+        ParkingFloor floor = new ParkingFloor(1, 2, 2);  // 2 car spots and 2 bike spots
+        ArrayList<ParkingFloor> floors = new ArrayList<>();
+        floors.add(floor);
+        ParkingLot parkingLot = new ParkingLot(floors);
+
+        // Initialize PaymentService, passing the scanner to it
+        PaymentService paymentService = new PaymentService(scanner);
+
+        // Initialize gates, passing both ParkingLot and PaymentService to ExitGate
+        EntranceGate entranceGate = new EntranceGate(parkingLot);
+        ExitGate exitGate = new ExitGate(parkingLot, paymentService);
+
+        // Start of the parking lot system
+        System.out.println("\n=========================================");
+        System.out.println("   Welcome to the Parking Lot System!   ");
+        System.out.println("=========================================");
+
+        // Continuous parking session until the user exits
+        boolean exit = false;
+        while (!exit) {
+            // Display menu
+            showMenu();
+
+            // Get user choice
+            int choice = getUserChoice(scanner);
+
+            switch (choice) {
+                case 1:
+                    // Park a vehicle via the entrance gate
+                    parkVehicle(entranceGate);
+                    break;
+
+                case 2:
+                    // Vacate a parking spot via the exit gate
+                    vacateSpot(exitGate, scanner);
+                    break;
+
+                case 3:
+                    // Exit the session
+                    exit = true;
+                    System.out.println("Thank you for using the Parking Lot System!");
+                    break;
+
+                default:
+                    System.out.println("Invalid option! Please try again.");
+                    break;
+            }
+        }
+
+        scanner.close(); // Always close the scanner to avoid resource leak
+    }
+
+    private static void showMenu() {
+        System.out.println("\n******************************************************");
+        System.out.println("Please choose an option from below:");
+        System.out.println("1. Park a vehicle");
+        System.out.println("2. Vacate a vehicle spot");
+        System.out.println("3. Exit the system");
+        System.out.println("******************************************************");
+    }
+
+    private static int getUserChoice(Scanner scanner) {
+        return scanner.nextInt();
+    }
+
+    private static void parkVehicle(EntranceGate entranceGate) {
+        entranceGate.processEntrance();
+    }
+
+    private static void vacateSpot(ExitGate exitGate, Scanner scanner) {
+        System.out.println("Enter the spot number to vacate: ");
+        int spotNumber = scanner.nextInt();
+        System.out.println("Enter the number of hours the vehicle stayed: ");
+        int hoursStayed = scanner.nextInt();
+        exitGate.processExit(spotNumber, hoursStayed);
+    }
+}
