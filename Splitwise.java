@@ -1,6 +1,14 @@
 import java.util.*;
 import java.text.DecimalFormat;
 
+// Req
+// 1. user can join/leave a group
+// 2. user can add expense in group
+// 3. user can settle expense in group
+// 4. can add expense based on several strategy eg equal split, unequal split
+// 5. user can't leave group without settling balance
+// 6. user can also add individual expense
+
 // Forward declarations equivalent - not needed in Java due to automatic resolution
 
 enum SplitType {
